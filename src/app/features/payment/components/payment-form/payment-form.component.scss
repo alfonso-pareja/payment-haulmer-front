@@ -1,0 +1,20 @@
+/* Input shared style — scoped to this component */
+.field-input {
+  @apply w-full h-11 px-3.5 bg-white border border-slate-200 rounded-xl text-slate-800
+         text-sm placeholder-slate-400 outline-none transition-all duration-150;
+
+  &:hover { @apply border-primary-300; }
+  &:focus {
+    @apply border-primary-600;
+    box-shadow: 0 0 0 3px rgba(29, 111, 224, 0.12);
+  }
+  &.error {
+    @apply border-danger-500 bg-danger-50;
+    &:focus { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1); }
+  }
+
+}
+
+.field-select {
+  @apply field-input appearance-none cursor-pointer pr-8;
+}

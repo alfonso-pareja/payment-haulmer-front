@@ -1,0 +1,120 @@
+
+@if (svc.state().isOpen) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       (click)="close()" role="dialog" aria-modal="true">
+
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-fade-in"></div>
+
+    <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-modal overflow-hidden animate-modal-in"
+         (click)="$event.stopPropagation()">
+
+      <!-- Processing -->
+      @if (svc.state().isProcessing) {
+        <div class="flex flex-col items-center px-8 py-12 text-center">
+          <div class="relative w-20 h-20 mb-6">
+            <span class="absolute inset-0 rounded-full bg-primary-100 animate-pulse-ring"></span>
+            <div class="absolute inset-0 flex items-center justify-center rounded-full bg-primary-50">
+              <svg class="w-9 h-9 text-primary-600 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" class="opacity-90"/>
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-900 mb-1">Procesando pago</h3>
+          <p class="text-sm text-slate-400">Validando con el banco...</p>
+          <div class="flex gap-1.5 mt-5">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-bounce" style="animation-delay:0ms"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-bounce" style="animation-delay:150ms"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-primary-400 animate-bounce" style="animation-delay:300ms"></span>
+          </div>
+        </div>
+      }
+
+      <!-- Approved -->
+      @if (!svc.state().isProcessing && svc.state().transaction?.status === 'approved') {
+        <div class="h-1 bg-gradient-to-r from-success-500 to-emerald-400"></div>
+        <div class="flex flex-col items-center px-7 pt-7 pb-6 text-center">
+          <div class="relative mb-5">
+            <span class="absolute inset-0 w-[72px] h-[72px] rounded-full bg-success-100 animate-pulse-ring"></span>
+            <div class="w-[72px] h-[72px] flex items-center justify-center rounded-full bg-success-500 animate-scale-in">
+              <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none">
+                <path d="M10 19 L16 25 L27 13" stroke="white" stroke-width="3"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      stroke-dasharray="32" class="animate-checkmark"/>
+              </svg>
+            </div>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-1">¡Pago Aprobado!</h3>
+          <p class="text-sm text-slate-400 mb-5">La transacción fue procesada exitosamente.</p>
+          <div class="w-full bg-slate-50 rounded-xl border border-slate-100 text-left text-xs divide-y divide-slate-100 mb-5">
+            <div class="flex justify-between px-4 py-2.5">
+              <span class="text-slate-400">Monto</span>
+              <span class="font-bold text-slate-800">
+                {{ svc.state().transaction!.amount | appCurrency:svc.state().transaction!.currency }}
+              </span>
+            </div>
+            <div class="flex justify-between px-4 py-2.5">
+              <span class="text-slate-400">Tarjeta</span>
+              <span class="font-mono text-slate-600">{{ svc.state().transaction!.cardNumberMasked }}</span>
+            </div>
+            <div class="flex justify-between px-4 py-2.5">
+              <span class="text-slate-400">Titular</span>
+              <span class="text-slate-600 uppercase">{{ svc.state().transaction!.cardHolder }}</span>
+            </div>
+            <div class="flex justify-between px-4 py-2.5">
+              <span class="text-slate-400">ID</span>
+              <code class="font-mono text-slate-500 bg-slate-200 px-1.5 py-px rounded text-[11px]">
+                {{ svc.state().transaction!.id | slice:0:12 }}…
+              </code>
+            </div>
+          </div>
+          <button (click)="close()"
+            class="w-full h-10 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold transition-colors">
+            Entendido
+          </button>
+        </div>
+      }
+
+      <!-- Rejected -->
+      @if (!svc.state().isProcessing && svc.state().transaction?.status === 'rejected') {
+        <div class="h-1 bg-gradient-to-r from-danger-500 to-rose-400"></div>
+        <div class="flex flex-col items-center px-7 pt-7 pb-6 text-center">
+          <div class="w-[72px] h-[72px] flex items-center justify-center rounded-full bg-danger-500 mb-5 animate-scale-in">
+            <svg class="w-8 h-8" viewBox="0 0 32 32" fill="none">
+              <path d="M10 10 L22 22 M22 10 L10 22" stroke="white" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-900 mb-1">Pago Rechazado</h3>
+          <p class="text-sm text-slate-400 mb-5">La tarjeta fue declinada.</p>
+          <div class="w-full bg-danger-50 rounded-xl border border-danger-100 text-left text-xs divide-y divide-danger-100 mb-5">
+            <div class="flex justify-between px-4 py-2.5">
+              <span class="text-danger-400">Monto</span>
+              <span class="font-bold text-danger-700">
+                {{ svc.state().transaction!.amount | appCurrency:svc.state().transaction!.currency }}
+              </span>
+            </div>
+            <div class="flex justify-between px-4 py-2.5">
+              <span class="text-danger-400">Tarjeta</span>
+              <span class="font-mono text-danger-600">{{ svc.state().transaction!.cardNumberMasked }}</span>
+            </div>
+            <div class="flex justify-between px-4 py-2.5">
+              <span class="text-danger-400">Motivo</span>
+              <span class="text-danger-600 font-semibold">Dígito impar (simulación)</span>
+            </div>
+          </div>
+          <div class="flex gap-2.5 w-full">
+            <button (click)="close()"
+              class="flex-1 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold transition-colors">
+              Cerrar
+            </button>
+            <button (click)="close()"
+              class="flex-1 h-10 rounded-xl bg-danger-600 hover:bg-danger-700 text-white text-sm font-semibold transition-colors">
+              Reintentar
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+}
