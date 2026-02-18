@@ -1,0 +1,310 @@
+{
+  "info": {
+    "name": "Payment API",
+    "description": "API REST para procesamiento de pagos con fake acquirer.\n\n**Base URL:** http://localhost:8000/api\n\n**Fake Acquirer Logic:**\n- Tarjeta termina en número PAR → ✅ APROBADO\n- Tarjeta termina en número IMPAR → ❌ RECHAZADO",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "payment-api"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Verifica el estado del servicio.\n\n**Response esperada:**\n- Status 200\n- JSON con status, timestamp y service name"
+      },
+      "response": []
+    },
+    {
+      "name": "Procesar Pago - Aprobado (Par)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Transaction is approved\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.status).to.eql(\"approved\");",
+              "});",
+              "",
+              "pm.test(\"Card number is masked\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.cardNumberMasked).to.include(\"****\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 100.50,\n  \"currency\": \"USD\",\n  \"cardNumber\": \"4111111111111112\",\n  \"cardHolder\": \"Juan Perez\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/v1/transactions",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions"]
+        },
+        "description": "Procesa un pago que será **APROBADO** porque la tarjeta termina en **2** (número par).\n\n**Fake Acquirer Logic:**\n- Último dígito: 2\n- 2 % 2 === 0 → ✅ APROBADO"
+      },
+      "response": []
+    },
+    {
+      "name": "Procesar Pago - Rechazado (Impar)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Transaction is rejected\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.status).to.eql(\"rejected\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 50.25,\n  \"currency\": \"EUR\",\n  \"cardNumber\": \"4111111111111111\",\n  \"cardHolder\": \"Maria Lopez\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/v1/transactions",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions"]
+        },
+        "description": "Procesa un pago que será **RECHAZADO** porque la tarjeta termina en **1** (número impar).\n\n**Fake Acquirer Logic:**\n- Último dígito: 1\n- 1 % 2 !== 0 → ❌ RECHAZADO"
+      },
+      "response": []
+    },
+    {
+      "name": "Procesar Pago - Moneda Minúsculas",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": 75.00,\n  \"currency\": \"clp\",\n  \"cardNumber\": \"4532015112830366\",\n  \"cardHolder\": \"Pedro Gonzalez\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/v1/transactions",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions"]
+        },
+        "description": "Prueba que la moneda se convierte automáticamente a mayúsculas.\n\n**Input:** `clp`\n**Output:** `CLP`"
+      },
+      "response": []
+    },
+    {
+      "name": "Procesar Pago - Validación Error",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 422\", function () {",
+              "    pm.response.to.have.status(422);",
+              "});",
+              "",
+              "pm.test(\"Has validation errors\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('errors');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amount\": -10,\n  \"currency\": \"US\",\n  \"cardNumber\": \"123\",\n  \"cardHolder\": \"John123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/v1/transactions",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions"]
+        },
+        "description": "Prueba las validaciones con datos incorrectos:\n\n**Errores esperados:**\n- amount: negativo (debe ser >= 0.01)\n- currency: 2 caracteres (debe ser 3)\n- cardNumber: muy corto (debe ser 13-19 dígitos)\n- cardHolder: contiene números (solo letras y espacios)"
+      },
+      "response": []
+    },
+    {
+      "name": "Historial Completo (Sin Paginación)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Has success flag\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Has data array\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/v1/transactions/all",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions", "all"]
+        },
+        "description": "Retorna **todas** las transacciones ordenadas por fecha descendente (más reciente primero).\n\n**Uso:** Dashboards, exportaciones, análisis completo.\n\n**Respuesta incluye:**\n- success\n- data[] (array con todas las transacciones)\n- meta.total"
+      },
+      "response": []
+    },
+    {
+      "name": "Historial Paginado - Página 1",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Has pagination meta\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.meta).to.have.property('current_page');",
+              "    pm.expect(jsonData.meta).to.have.property('per_page');",
+              "    pm.expect(jsonData.meta).to.have.property('total');",
+              "    pm.expect(jsonData.meta).to.have.property('last_page');",
+              "});",
+              "",
+              "pm.test(\"Has pagination links\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.links).to.have.property('first');",
+              "    pm.expect(jsonData.links).to.have.property('last');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/v1/transactions?page=1&per_page=10",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Número de página (default: 1)"
+            },
+            {
+              "key": "per_page",
+              "value": "10",
+              "description": "Resultados por página (default: 10)"
+            }
+          ]
+        },
+        "description": "Retorna transacciones con **paginación**.\n\n**Parámetros:**\n- page: número de página (default: 1)\n- per_page: resultados por página (default: 10)\n\n**Respuesta incluye:**\n- data[] (transacciones de la página actual)\n- meta (current_page, per_page, total, last_page)\n- links (first, last, prev, next)"
+      },
+      "response": []
+    },
+    {
+      "name": "Historial Paginado - Página 2",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/v1/transactions?page=2&per_page=5",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions"],
+          "query": [
+            {
+              "key": "page",
+              "value": "2"
+            },
+            {
+              "key": "per_page",
+              "value": "5"
+            }
+          ]
+        },
+        "description": "Ejemplo de navegación a la página 2 con 5 resultados por página."
+      },
+      "response": []
+    },
+    {
+      "name": "Historial Paginado - Default",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/v1/transactions",
+          "host": ["{{base_url}}"],
+          "path": ["v1", "transactions"]
+        },
+        "description": "Sin parámetros usa los valores por defecto:\n- page: 1\n- per_page: 10"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    }
+  ]
+}
